@@ -172,30 +172,22 @@ sub make_fn{
   #}
   if(exists($GRAPH{$target})){ #if the target exists, call make_fn recursively on prereqs
     print("graph exists\n");
-    if($GRAPH{$target}{PREREQS} != []){
+    if(@{$GRAPH{$target}{PREREQS}} != 0){
       print("prereqs not empty\n");
-      # if there are prerequisites to the current target, let's make a recursive call to the first prereq
-      # we are assuming that first prereq is a target, so we want to call make_fn(first_prereq)
-      #at this point notes say "split the value by spaces, then iterate on items"
-      #for my $i (0 .. $#Array)
-      #{
-      #SubRoutine($Array[$i]);
-      #}
       foreach(@{$GRAPH{$target}{PREREQS}}){
-        print("calling make_fn on $_ which is a prereq for $target\n");
+        print("#########calling make_fn on $_ which is a prereq for $target\n");
         $count += make_fn($_);
       }
-    }else{
-      $count += make_fn($target);
-      print("calling make_fn on $target\n");
     }
-      #this is the farthest i got, it is "Determine if the target is obsolete" on the notes
-    check_prereqs($target); #checking modtime
+    #else{
+    #  print("calling make_fn on $target\n");
+    #  $count += make_fn($target);
+    #}
+    check_prereqs($target);
   }else{
     print("pmake: *** No rule to make target $target.\n");
     return 1;
   }
-  #run_command($target);
 }
 
 sub check_prereqs{
@@ -208,13 +200,8 @@ sub check_prereqs{
     #  }
     #}
       #checking modtime
-  foreach ($GRAPH{$target}{PREREQS}){
+  foreach (@{$GRAPH{$target}{PREREQS}}){
     print("checking prereq $_ which is a prereq for $target\n");
-    print("quick check $_\n");
-    #print(modtime($_));
-    #print(modtime($target));
-    #my $target_modtime = modtime($target);
-    #my $prereq_modtime = modtime($_);
     #if($prereq_modtime > $target_modtime){
     if(0){
       print("pmake: *** Target: $target up to date.\n");
@@ -226,7 +213,7 @@ sub check_prereqs{
         print("$GRAPH{$target}{COMMANDS}[0]{CMD}\n");
         #my $temp = $GRAPH{$target}{COMMANDS}
         #$temp[0]{}
-        foreach ($GRAPH{$target}{COMMANDS}){
+        foreach (@{$GRAPH{$target}{COMMANDS}}){
           my $x = run_command($_{CMD});
         if(defined($x)){
         #if(0){
