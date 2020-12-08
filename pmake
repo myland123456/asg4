@@ -282,7 +282,7 @@ sub checkprereqs
     }
 }
 
-
+#small edit
 scan_cmdline;
 load_Makefile;
 
