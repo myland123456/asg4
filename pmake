@@ -61,9 +61,10 @@ my %strsignal = (
 sub run_command (@) {
    my (@command) = @_;
    if(substr($command[0], 0, 1) eq '-'){
-      #print("started with -\n");
+      print("started with -\n");
     }elsif(substr($command[0], 0, 1) eq '@'){
-      #print("started with @\n");
+      print("started with @\n");
+      $command[0] = substr($command[0], 1)
     }else{
       print "@command\n";    
     }
@@ -172,31 +173,38 @@ sub make_fn{
   my $count = 0;
   my $target = $_[0];
   if(exists($GRAPH{$target})){
+    print("Target $target exists\n");
     check_prereqs($target, $count);
     #foreach (@{$GRAPH{$target}{COMMANDS}}){
     #print("#######$_");
     my $x = run_command($GRAPH{$target}{COMMANDS}[0]{CMD});
     #print("$_{CMD}");
     #print("$target command is run\n");
-    if(defined($x)){
+    if(defined($x) and substr($GRAPH{$target}{COMMANDS}[0]{CMD}, 0, 1) ne '-'){
+      print("COMMAND: $GRAPH{$target}{COMMANDS}[0]{CMD} was run and had output: $x\n");
       return 1;
-        }else{
-          }
     }else{
-      print("pmake: *** No rule to make target $target.\n");
-      return 1;
-    }
+      print("COMMAND: $GRAPH{$target}{COMMANDS}[0]{CMD} was run and had no error\n");
+      }
+  }else{
+    print("pmake: *** No rule to make target $target.\n");
+    return 1;
+  }
+  return $count;
 }
 
 sub check_prereqs{
   my $target = $_[0];
   my $count = $_[1];
-  #print("check prereqs was called on target $target\n");
+  print("check prereqs was called on target $target\n");
   foreach (@{$GRAPH{$target}{PREREQS}}){
     #check if macro
     if(0){ #if macro
       #split and iterate (ignoring this step for now)
       #count += make_fn item;
+    }elsif($_ =~ m/\s*\S+\.\S+\s*/){
+      print("Target $target is a file\n");
+      next;
     }else{
       $count += make_fn($_);
     }
