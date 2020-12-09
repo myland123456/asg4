@@ -60,7 +60,14 @@ my %strsignal = (
 
 sub run_command (@) {
    my (@command) = @_;
-   print "@command\n";
+   if(substr($command[0], 0, 1) eq '-'){
+      #print("started with -\n");
+    }elsif(substr($command[0], 0, 1) eq '@'){
+      #print("started with @\n");
+    }else{
+      print "@command\n";    
+    }
+   #print "@command\n";
    my $status = eval {no warnings; system @command};
    return undef unless $status;
    return "$!" if $status == -1;
@@ -162,70 +169,40 @@ sub find_start() {
 }
 
 sub make_fn{
-  print("enters make_fn\n");
   my $count = 0;
-  print("count = $count\n");
-  my $target = $_[0]; #target is a key
-  print("target = $target\n");
-  #for(keys %MACROS){ #might need to do this muliple times bc of nested macros
-  #  $target =~ s/"{\$$_}"/$MACROS{$_}/;
-  #}
-  if(exists($GRAPH{$target})){ #if the target exists, call make_fn recursively on prereqs
-    print("graph exists\n");
-    if(@{$GRAPH{$target}{PREREQS}} != 0){
-      print("prereqs not empty\n");
-      foreach(@{$GRAPH{$target}{PREREQS}}){
-        print("#########calling make_fn on $_ which is a prereq for $target\n");
-        $count += make_fn($_);
-      }
+  my $target = $_[0];
+  if(exists($GRAPH{$target})){
+    check_prereqs($target, $count);
+    #foreach (@{$GRAPH{$target}{COMMANDS}}){
+    #print("#######$_");
+    my $x = run_command($GRAPH{$target}{COMMANDS}[0]{CMD});
+    #print("$_{CMD}");
+    #print("$target command is run\n");
+    if(defined($x)){
+      return 1;
+        }else{
+          }
+    }else{
+      print("pmake: *** No rule to make target $target.\n");
+      return 1;
     }
-    #else{
-    #  print("calling make_fn on $target\n");
-    #  $count += make_fn($target);
-    #}
-    check_prereqs($target);
-  }else{
-    print("pmake: *** No rule to make target $target.\n");
-    return 1;
-  }
 }
 
 sub check_prereqs{
   my $target = $_[0];
-  print("check prereqs was called on target $target\n");
-    #replace macros that exist in prereqs
-    #for(keys $GRAPH{$target}{PREREQS}){
-    #  if(exists($MACROS{$_})){
-    #    $GRAPH{$target}{PREREQS}{$_} = $MACROS{$_};
-    #  }
-    #}
-      #checking modtime
+  my $count = $_[1];
+  #print("check prereqs was called on target $target\n");
   foreach (@{$GRAPH{$target}{PREREQS}}){
-    print("checking prereq $_ which is a prereq for $target\n");
-    #if($prereq_modtime > $target_modtime){
-    if(0){
-      print("pmake: *** Target: $target up to date.\n");
-      return 1; #I think this quits
+    #check if macro
+    if(0){ #if macro
+      #split and iterate (ignoring this step for now)
+      #count += make_fn item;
     }else{
-        print("***************\n");
-        print("$GRAPH{$target}\n");
-        print("$GRAPH{$target}{COMMANDS}\n");
-        print("$GRAPH{$target}{COMMANDS}[0]{CMD}\n");
-        #my $temp = $GRAPH{$target}{COMMANDS}
-        #$temp[0]{}
-        foreach (@{$GRAPH{$target}{COMMANDS}}){
-          my $x = run_command($_{CMD});
-        if(defined($x)){
-        #if(0){
-          print("run command output: $x");
-          return 1;
-        }else{
-            #check if command is prefixed by "-"
-          }
-        }
-      }
+      $count += make_fn($_);
     }
+
   }
+}
 
 
 scan_cmdline;
