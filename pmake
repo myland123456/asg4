@@ -25,50 +25,54 @@ $SIG{'__DIE__'} = sub { print STDERR @_; $STATUS = 1; exit; };
 # sigtoperl: x86_64 Linux unix1.lt.ucsc.edu
 # sigtoperl: Sun Nov 22 17:33:55 2020
 my %strsignal = (
-    0 => "Unknown signal 0",
-    1 => "Hangup",
-    2 => "Interrupt",
-    3 => "Quit",
-    4 => "Illegal instruction",
-    5 => "Trace/breakpoint trap",
-    6 => "Aborted",
-    7 => "Bus error",
-    8 => "Floating point exception",
-    9 => "Killed",
-   10 => "User defined signal 1",
-   11 => "Segmentation fault",
-   12 => "User defined signal 2",
-   13 => "Broken pipe",
-   14 => "Alarm clock",
-   15 => "Terminated",
-   16 => "Stack fault",
-   17 => "Child exited",
-   18 => "Continued",
-   19 => "Stopped (signal)",
-   20 => "Stopped",
-   21 => "Stopped (tty input)",
-   22 => "Stopped (tty output)",
-   23 => "Urgent I/O condition",
-   24 => "CPU time limit exceeded",
-   25 => "File size limit exceeded",
-   26 => "Virtual timer expired",
-   27 => "Profiling timer expired",
-   28 => "Window changed",
-   29 => "I/O possible",
-   30 => "Power failure",
-   31 => "Bad system call",
+	0 => "Unknown signal 0",
+	1 => "Hangup",
+	2 => "Interrupt",
+	3 => "Quit",
+	4 => "Illegal instruction",
+	5 => "Trace/breakpoint trap",
+	6 => "Aborted",
+	7 => "Bus error",
+	8 => "Floating point exception",
+	9 => "Killed",
+10 => "User defined signal 1",
+11 => "Segmentation fault",
+12 => "User defined signal 2",
+13 => "Broken pipe",
+14 => "Alarm clock",
+15 => "Terminated",
+16 => "Stack fault",
+17 => "Child exited",
+18 => "Continued",
+19 => "Stopped (signal)",
+20 => "Stopped",
+21 => "Stopped (tty input)",
+22 => "Stopped (tty output)",
+23 => "Urgent I/O condition",
+24 => "CPU time limit exceeded",
+25 => "File size limit exceeded",
+26 => "Virtual timer expired",
+27 => "Profiling timer expired",
+28 => "Window changed",
+29 => "I/O possible",
+30 => "Power failure",
+31 => "Bad system call",
 );
 
 sub run_command (@) 
 {
 	my (@command) = @_;
+   # print("in run_command, \@command is @command\n");
 	if(substr($command[0], 0, 1) eq '@')
 	{
 		print("in first condition of run_command, \$command[0] is $command[0]\n");
+      $command[0] = substr($command[0], 1)
 	}
 	elsif(substr($command[0], 0, 1) eq '-')
 	{
-		print("in second condition of run_command\n");
+		# print("in second condition of run_command\n");
+      $command[0] = substr($command[0], 2);
+      print("$command[0]\n");
 	}
 	else
 	{
@@ -76,7 +80,7 @@ sub run_command (@)
 	}
 	# print "@command\n";
 	my $status = eval {no warnings; system @command};
-	return undef unless $status;
+	return undef unless ($status);
 	return "$!" if $status == -1;
 	my $signal = $status & 0x7F;
 	my $core = $status & 0x80;
@@ -214,11 +218,28 @@ sub make_fn
 		# calling check_prereqs will check if there are any prereqs,
 		# if there are any, then we want to recursively call make_fn on the targets
 		check_prereqs($target);
-		my $result = run_command($GRAPH{$target}{COMMANDS}[0]{CMD});
-		if(defined($result))
-		{
-			# print("run_command returned a result, aka we have an error\n");
-		}
+      # print("done checking prereqs\n");
+      my $target_modtime = modtime($target);
+      # print("modtime of $target is $target_modtime\n");
+      # if target_modtime is defined, that means its up to date
+
+      if(! defined($target_modtime) and defined($GRAPH{$target}{COMMANDS}[0]{CMD}))
+      {
+         my $result = run_command($GRAPH{$target}{COMMANDS}[0]{CMD});
+         if(defined($result) and substr($GRAPH{$target}{COMMANDS}[0]{CMD}, 0, 1) eq '-')
+         {
+            # print("run_command returned a result, aka we have an error, \$result is $result\n");
+            print("pmake: [Makefile:$GRAPH{$target}{COMMANDS}[0]{LINE}: $target] Error 1 (ignored)\n");
+         }
+      }
+      elsif(! defined($GRAPH{$target}{COMMANDS}[0]{CMD}))
+      {
+         # print("There are no commands.\n");
+      }
+      else
+      {
+         print("pmake: '$target' is up to date.\n");
+      }
 	}
 	# we need to consider if the target's prerequisites are files
 	# if they are files, we just want to make sure they exist
@@ -233,7 +254,7 @@ sub check_prereqs
 {
     my $target = $_[0];
 	# my $count = $_[1];
-    
+   #  print("entered check_prereqs\n");
 	# we want to loop through the current target's prerequisites
 	# if there are any, recursively call make_fn on that prerequisite
 	# otherwise... we will worry about that later
@@ -243,7 +264,12 @@ sub check_prereqs
 		{
 			print("we have a macro!\n");
 		}
-		elsif($_ =~ m/\s*\S+\.\S+\s*/) #checks to see if the prereq is a file
+      elsif($_ =~ m/\.o/)
+      {
+         # print("$_ is a .o file\n");
+         make_fn($_);
+      }
+		elsif($_ =~ m/\s*\S+\.\S+\s*/) #checks to see if the prereq is a file that is not a .o file
 		{
 			# if the current prereq is a file, just ignore it
 			# however, we do want to compare its timestamp 
@@ -271,6 +297,7 @@ sub check_prereqs
 		}
 		else
 		{
+         # print("")
 			make_fn($_);
 		}
 	}
@@ -279,8 +306,6 @@ sub check_prereqs
 
 scan_cmdline;
 load_Makefile;
-my $start = find_start;
-make_fn($start);
 
 my $root_of_graph = find_start;
 make_fn($root_of_graph);
