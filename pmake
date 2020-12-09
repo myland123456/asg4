@@ -11,9 +11,10 @@ use warnings;
 $Data::Dumper::Indent = 1;
 $Data::Dumper::Sortkeys = 1;
 $Data::Dumper::Terse = 1;
-sub dump_hash ($\%) {
-my ($label, $hashptr) = @_;
-print STDERR "%$label: ", Data::Dumper->Dump ([$hashptr]);
+sub dump_hash ($\%) 
+{
+	my ($label, $hashptr) = @_;
+	print STDERR "%$label: ", Data::Dumper->Dump ([$hashptr]);
 }
 
 my $STATUS = 0;
@@ -58,34 +59,32 @@ my %strsignal = (
 31 => "Bad system call",
 );
 
-sub run_command (@) {
-my (@command) = @_;
-print "@command\n";
-my $status = eval {no warnings; system @command};
-return undef unless $status;
-return "$!" if $status == -1;
-my $signal = $status & 0x7F;
-my $core = $status & 0x80;
-my $exit = ($status >> 8) & 0xFF;
-return "Error $exit" unless $signal || $core;
-return ($strsignal{$signal} || "Invalid Signal Number $signal")
-		. ($core ? " (core dumped)" : "");
+sub run_command (@) 
+{
+	my (@command) = @_;
+	if(substr($command[0], 0, 1) eq '@')
+	{
+		print("in first condition of run_command, \$command[0] is $command[0]\n");
+	}
+	elsif(substr($command[0], 0, 1) eq '-')
+	{
+		print("in second condition of run_command\n");
+	}
+	else
+	{
+		print("@command\n");
+	}
+	# print "@command\n";
+	my $status = eval {no warnings; system @command};
+	return undef unless $status;
+	return "$!" if $status == -1;
+	my $signal = $status & 0x7F;
+	my $core = $status & 0x80;
+	my $exit = ($status >> 8) & 0xFF;
+	return "Error $exit" unless $signal || $core;
+	return ($strsignal{$signal} || "Invalid Signal Number $signal")
+			. ($core ? " (core dumped)" : "");
 }
-
-#sub run_command (@) {
-#   my (@command) = @_;
-#   print "@command\n";
-#   my $status = eval {no warnings; system @command};
-#   return undef unless $status;
-#   return 127, "$!" if $status == -1;
-#   my $signal = $status & 0x7F;
-#   my $core = $status & 0x80;
-#   my $exit = ($status >> 8) & 0xFF;
-#   return $exit, "Error $exit" unless $signal || $core;
-#   return $signal + 128,
-#         ($strsignal{$signal} || "Invalid Signal Number $signal")
-#         . ($core ? " (core dumped)" : "");
-#}
 
 
 my $MAKECMDGOALS;
@@ -98,92 +97,83 @@ sub usage() { die "Usage: $0 [-d] [target]\n" }
 sub stop($) { die "$Makefile:@_. Stop.\n" }
 
 #gets files?
-sub scan_cmdline() {
-getopts "dg", \%OPTIONS;
-usage unless @ARGV <= 1;
-$MAKECMDGOALS = $ARGV[0] if @ARGV == 1;
+sub scan_cmdline() 
+{
+	getopts "dg", \%OPTIONS;
+	usage unless @ARGV <= 1;
+	$MAKECMDGOALS = $ARGV[0] if @ARGV == 1;
 }
 
 #clears graph hash?
-sub dump_graph() {
-print STDERR "%MACROS:\n";
-for my $macro (sort keys %MACROS) {
-	printf STDERR "%7d [%s] = [%s]\n",
-			$MACROS{$macro}{LINE}, $macro, $MACROS{$macro}{VALUE};
-}
-print STDERR "MAKECMDGOALS = [$MAKECMDGOALS]\n";
-print STDERR "%GRAPH:\n";
-for my $target (sort keys %GRAPH) {
-	my $prereqs = $GRAPH{$target}{PREREQS};
-	printf STDERR "%7d [%s] :", $GRAPH{$target}{LINE}, $target;
-	print STDERR " [$_]" for @$prereqs;
-	print STDERR "\n";
-	for my $cmd (@{$GRAPH{$target}{COMMANDS}}) {
-		printf STDERR "%7d \t[%s]\n", $cmd->{LINE}, $cmd->{CMD};;
+sub dump_graph() 
+{
+	print STDERR "%MACROS:\n";
+	for my $macro (sort keys %MACROS) 
+	{
+		printf STDERR "%7d [%s] = [%s]\n",
+				$MACROS{$macro}{LINE}, $macro, $MACROS{$macro}{VALUE};
 	}
-}
+	print STDERR "MAKECMDGOALS = [$MAKECMDGOALS]\n";
+	print STDERR "%GRAPH:\n";
+	for my $target (sort keys %GRAPH) 
+	{
+		my $prereqs = $GRAPH{$target}{PREREQS};
+		printf STDERR "%7d [%s] :", $GRAPH{$target}{LINE}, $target;
+		print STDERR " [$_]" for @$prereqs;
+		print STDERR "\n";
+		for my $cmd (@{$GRAPH{$target}{COMMANDS}}) 
+		{
+			printf STDERR "%7d \t[%s]\n", $cmd->{LINE}, $cmd->{CMD};;
+		}
+	}
 }
 
 #gets all variables and macros and stuff?
-sub load_Makefile() {
-open my $mkfile, "<$Makefile" or die "$0: $Makefile: $!";
-my $target;
-while (defined (my $line = <$mkfile>)) {
-	next if $line =~ m/^\s*(#|$)/;
-	if (!$target && $line =~ m/^\s*(\S+)\s*=\s*(.*?)\s*$/) {
-		$MACROS{$1} = {LINE=> $., VALUE=> $2};
-	}elsif ($line =~ m/^(\S+)\s*:\s*(.*)/) {
-		$target = $1;
-		$GRAPH{$target}{PREREQS} = [split ' ', $2];
-		$GRAPH{$target}{LINE} = $.;
-		$MAKECMDGOALS = $target unless $MAKECMDGOALS;
-	}elsif ($line =~ m/^\t(.*)/) {
-		if (defined $target) {
-			push @{$GRAPH{$target}{COMMANDS}},
-				{LINE=> $., CMD=> $1};
-		}else {
-			stop "$.: Command before first target";
+sub load_Makefile() 
+{
+	open my $mkfile, "<$Makefile" or die "$0: $Makefile: $!";
+	my $target;
+	while (defined (my $line = <$mkfile>)) 
+	{
+		next if $line =~ m/^\s*(#|$)/;
+		if (!$target && $line =~ m/^\s*(\S+)\s*=\s*(.*?)\s*$/) 
+		{
+			$MACROS{$1} = {LINE=> $., VALUE=> $2};
 		}
-	}else {
-		stop "$.: Missing separator";
+		elsif ($line =~ m/^(\S+)\s*:\s*(.*)/) 
+		{
+			$target = $1;
+			$GRAPH{$target}{PREREQS} = [split ' ', $2];
+			$GRAPH{$target}{LINE} = $.;
+			$MAKECMDGOALS = $target unless $MAKECMDGOALS;
+		}
+		elsif ($line =~ m/^\t(.*)/) 
+		{
+			if (defined $target) 
+			{
+				push @{$GRAPH{$target}{COMMANDS}},
+					{LINE=> $., CMD=> $1};
+			}
+			else 
+			{
+				stop "$.: Command before first target";
+			}
+		}
+		else 
+		{
+			stop "$.: Missing separator";
+		}
 	}
-}
-close $mkfile;
+	close $mkfile;
 }
 
 #gets time file was last modified (mackeys function)
-sub modtime ($) {
-my ($filename) = @_;
-my @stat = stat $filename;
-return @stat ? $stat[9] : undef;
+sub modtime ($) 
+{
+	my ($filename) = @_;
+	my @stat = stat $filename;
+	return @stat ? $stat[9] : undef;
 }
-
-# sub traverse_graph{
-#   #go through all variables in GRAPH hash
-#     #if target is a file keep going
-#     #if target is a command call run command and replace macros with values
-#     #else check prereqs
-#     #call check_prereqs
-#       #check prereqs modtime
-#         #if newer than source file quit
-#         #else keep going
-
-#   foreach($key (keys %GRAPH)){
-#     if(substr($GRAPH{$key}, 0, 1) == "  "){
-#       run_command($GRAPH{$key);
-#       #@, -, or regular command should be handled in run command
-#     }elsif(#its a file){
-#       if(-e $GRAPH{$key}){
-#         next;
-#       }else{
-#         check_prereqs($GRAPH{$key})
-#       }
-#     }else{
-#     #its a macro assignment???
-#     #I dont think u do anything here bc the macro hash is already filled so maybe u dont need an else
-#     }
-#   }
-# }
 
 sub find_start() 
 {
@@ -213,78 +203,85 @@ sub find_start()
 
 sub make_fn
 {
-	my $count = 0;
-	my $target = $_[0]; #target is a key
-	for(keys %MACROS)
-    { #might need to do this muliple times bc of nested macros
-		$target =~ s/"{\$$_}"/$MACROS{$_}/; 
-	}
+	# my $count = 0;
+	# $_[0] gives us the argument passed in at the 0'th index, i.e the first argument
+	my $target = $_[0]; 
+	# first check if the target exists, if it doesnt, print an error command such as:
+	# pmake: *** No rule to make target $target. Stop.***
+	# print("Start of make_fn, target is $target\n");
 	if(exists($GRAPH{$target}))
-    { #if the target exists, call make_fn recursively on prereqs
-		if($GRAPH{$target}{PREREQS} != [])
+	{
+		# calling check_prereqs will check if there are any prereqs,
+		# if there are any, then we want to recursively call make_fn on the targets
+		check_prereqs($target);
+		my $result = run_command($GRAPH{$target}{COMMANDS}[0]{CMD});
+		if(defined($result))
 		{
-			# if there are prerequisites to the current target, let's make a recursive call to the first prereq
-			# we are assuming that first prereq is a target, so we want to call make_fn(first_prereq)
+			# print("run_command returned a result, aka we have an error\n");
+		}
+	}
+	# we need to consider if the target's prerequisites are files
+	# if they are files, we just want to make sure they exist
+	# if they exist, then execute their commands, otherwise throw an error
+	else
+	{
+		print("pmake: *** No rule to make target $target. Stop***\n");
+	}
+}
 
-			#at this point notes say "split the value by spaces, then iterate on items"
-			for(keys $GRAPH{$target}{PREREQS})
-            {
-				$count += make_fn($_);
+sub check_prereqs
+{
+    my $target = $_[0];
+	# my $count = $_[1];
+    
+	# we want to loop through the current target's prerequisites
+	# if there are any, recursively call make_fn on that prerequisite
+	# otherwise... we will worry about that later
+	foreach (@{$GRAPH{$target}{PREREQS}})
+	{
+		if(0)
+		{
+			print("we have a macro!\n");
+		}
+		elsif($_ =~ m/\s*\S+\.\S+\s*/) #checks to see if the prereq is a file
+		{
+			# if the current prereq is a file, just ignore it
+			# however, we do want to compare its timestamp 
+			# we need to check if the file exists, if it exists, system will return 0,
+			# otherwise it'll return 1
+			# if it returns 1, throw an error saying the target does not exist
+			# my $status = eval {no warnings; system("find $_; echo $?") };
+
+			# find the modtime of the prereq, if the prereq exists, status should be defined
+			my $status = modtime($_);
+			# print("\$status is $status\n");
+
+			# if status is undefined, then that means it does not exist
+			if(! defined($status))
+			{
+				print("cannot find target: $_\n");
 			}
+			# otherwise, the file prereq does exist so just continue with the loop
+			else 
+			{
+				next;
+			}
+			# print("prereq: $_ is a file!\n");
+			# my $result = run_command($GRAPH{$target}{COMMANDS}[0]{CMD});
 		}
 		else
 		{
-			# if the current target has no prereqs, just execute their commands
-			$count += make_fn($target);
+			make_fn($_);
 		}
-		#this is the farthest i got, it is "Determine if the target is obsolete" on the notes
-		check_prereqs($target); #checking modtime
 	}
-	else
-	{
-		print("pmake: *** No rule to make target $target.");
-		return 1;
-	}
-	run_command($target);
-}
-
-sub checkprereqs
-{
-    my $target = $[0];
-    #replace macros that exist in prereqs
-    for(keys $GRAPH{$target}{PREREQS})
-    {
-        if(exists($MACROS{$}))
-        {
-            $GRAPH{$target}{PREREQS}{$} = $MACROS{$};
-        }
-    }
-      #checking modtime
-    for(keys $GRAPH{$target}{PREREQS})
-    {
-        if(modtime($) < modtime($target))
-        {
-            print("pmake: *** Target: $target up to date.");
-            return 1; #I think this quits
-        }
-        else
-        {
-            for(keys $GRAPH{$target}{CMD})
-            {
-                my $x = runcommand($);
-                if(defined($x)){
-                #check if command is prefixed by "-"
-                #if not print suitable error message
-                #return 1
-                }
-            }
-        }
-    }
 }
 
 
 scan_cmdline;
 load_Makefile;
+
+my $root_of_graph = find_start;
+make_fn($root_of_graph);
 
 dump_hash ("MACROS", %MACROS) if $OPTIONS{'d'};
 dump_hash ("GRAPH", %GRAPH) if $OPTIONS{'d'};
