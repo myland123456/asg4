@@ -224,15 +224,15 @@ sub make_fn
 
    if($target =~ m/^\$\{(.+)\}/)
    {
-      print("\$target: $target is a macro!\n");
-      print("euvcheqri[uvheqriuvheqiuveqriuveiwruvbqe\n");
-      print("$MACROS{$1}{VALUE}\n");
+      #print("\$target: $target is a macro!\n");
+      #print("euvcheqri[uvheqriuvheqiuveqriuveiwruvbqe\n");
+      #print("$MACROS{$1}{VALUE}\n");
       my $old_target = $target;
       $target = $MACROS{$1}{VALUE};
       $GRAPH{$target} = $GRAPH{$old_target};
       delete $GRAPH{$old_target};
-      print("old target = $old_target\n");
-      print("replaced = $GRAPH{$target}\n");
+      #print("old target = $old_target\n");
+      #print("replaced = $GRAPH{$target}\n");
    }
 
   if(exists($GRAPH{$target}))
@@ -329,24 +329,35 @@ sub check_prereqs
          # if the prerequisite is not a file, then it is a macro
          if($_ =~ m/^\$\{(.+)\}/)
          {
-            print("        \$prereq: $_ is a macro!\n");
-            print("        $_ 's value is: $MACROS{$1}{VALUE}\n");
+            #print("        \$prereq: $_ is a macro!\n");
+            #print("        $_ 's value is: $MACROS{$1}{VALUE}\n");
             my $old_target = $_;
             $_ = $MACROS{$1}{VALUE};
-            print("\$_ = $_\n");
-            print("old target = $old_target\n");
-            print("\$_ = $_\n");
+            #print("\$_ = $_\n");
+            #print("old target = $old_target\n");
+            #print("\$_ = $_\n");
             $GRAPH{$_} = $GRAPH{$old_target};
-            print("GRAPH at {\$_} = $GRAPH{$_}\n");
+            #print("GRAPH at {\$_} = $GRAPH{$_}\n");
             delete $GRAPH{$old_target};
             foreach (@{$GRAPH{$_}{PREREQS}}){
               if($_ =~ m/^\$\{(.+)\}/){
                 $_ = $MACROS{$1}{VALUE};
               }
+              print("trying to split $_\n");
+              my @items = split / /, $_;
+              foreach (@items){
+                make_fn($_);
+              }
             }
-         }
+          #print("trying to split $_\n");
+          # my @items = split / /, $_;
+          # foreach (@items){
+          #   make_fn($_);
+          # }
+         }else{
          # print("")
-      make_fn($_);
+          make_fn($_);
+        }
     }
   }
 }
