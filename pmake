@@ -285,9 +285,13 @@ sub check_prereqs
   # otherwise... we will worry about that later
   foreach (@{$GRAPH{$target}{PREREQS}})
   {
-    if(0)
-    {
-      print("we have a macro!\n");
+    # if($_ =~ m/^\$\{(.+)\}/)
+    # {
+    #   print("we have a macro!\n");
+    #   $_ = $MACROS{$1}{VALUE};
+    # }
+    if(0){
+
     }
       elsif($_ =~ m/\.o/)
       {
@@ -331,11 +335,15 @@ sub check_prereqs
             $_ = $MACROS{$1}{VALUE};
             print("\$_ = $_\n");
             print("old target = $old_target\n");
-            $_ = $MACROS{$1}{VALUE};
             print("\$_ = $_\n");
             $GRAPH{$_} = $GRAPH{$old_target};
             print("GRAPH at {\$_} = $GRAPH{$_}\n");
             delete $GRAPH{$old_target};
+            foreach (@{$GRAPH{$_}{PREREQS}}){
+              if($_ =~ m/^\$\{(.+)\}/){
+                $_ = $MACROS{$1}{VALUE};
+              }
+            }
          }
          # print("")
       make_fn($_);
