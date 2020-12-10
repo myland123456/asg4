@@ -65,8 +65,8 @@ sub run_command (@)
    # print("in run_command, \@command is @command\n");
 	if(substr($command[0], 0, 1) eq '@')
 	{
-		print("in first condition of run_command, \$command[0] is $command[0]\n");
-      $command[0] = substr($command[0], 1)
+		# print("in first condition of run_command, \$command[0] is $command[0]\n");
+      # $command[0] = substr($command[0], 1)
 	}
 	elsif(substr($command[0], 0, 1) eq '-')
 	{
@@ -212,13 +212,29 @@ sub make_fn
 	my $target = $_[0]; 
 	# first check if the target exists, if it doesnt, print an error command such as:
 	# pmake: *** No rule to make target $target. Stop.***
-	# print("Start of make_fn, target is $target\n");
+	print("Start of make_fn, target is $target\n");
+
+	# first need to check if $target matches something in the form "${*}"
+   # so do a search and replace, where we check if target is of the form ${}, and if it is, replace it with
+   # $MACROS{$target}
+
+
+   if($target =~ m/^\$\{(.+)\}/)
+   {
+      print("\$target: $target is a macro!\n");
+      print("$MACROS{$1}{VALUE}\n");
+      $target = $MACROS{$1}{VALUE};
+   }
+
 	if(exists($GRAPH{$target}))
 	{
+
+      # print("In the if condition of make_fn, \$GRAPH{$target} is ($GRAPH{$target})\n");
+
 		# calling check_prereqs will check if there are any prereqs,
 		# if there are any, then we want to recursively call make_fn on the targets
 		check_prereqs($target);
-      # print("done checking prereqs\n");
+      print("     done checking prereqs: $target\n");
       my $target_modtime = modtime($target);
       # print("modtime of $target is $target_modtime\n");
       # if target_modtime is defined, that means its up to date
@@ -254,7 +270,7 @@ sub check_prereqs
 {
     my $target = $_[0];
 	# my $count = $_[1];
-   #  print("entered check_prereqs\n");
+    print("    checking prereqs: $target\n");
 	# we want to loop through the current target's prerequisites
 	# if there are any, recursively call make_fn on that prerequisite
 	# otherwise... we will worry about that later
@@ -297,6 +313,13 @@ sub check_prereqs
 		}
 		else
 		{
+         # if the prerequisite is not a file, then it is a macro
+         if($_ =~ m/^\$\{(.+)\}/)
+         {
+            print("        \$prereq: $_ is a macro!\n");
+            print("        $_ 's value is: $MACROS{$1}{VALUE}\n");
+            $_ = $MACROS{$1}{VALUE};
+         }
          # print("")
 			make_fn($_);
 		}
