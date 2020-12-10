@@ -61,12 +61,14 @@ my %strsignal = (
 
 sub run_command (@) 
 {
-   # if the command has a macro, we need to replace the macro with the proper Macro hash values
+   # if the command has a macro,
+   # we need to replace the macro with the proper Macro hash values
 	my (@command) = @_;
    # print("in run_command, \@command is @command\n");
 	if(substr($command[0], 0, 1) eq '@')
 	{
-		# print("in first condition of run_command, \$command[0] is $command[0]\n");
+		# print("in first condition of run_command, 
+      # \$command[0] is $command[0]\n");
       # $command[0] = substr($command[0], 1)
 	}
 	elsif(substr($command[0], 0, 1) eq '-')
@@ -207,7 +209,8 @@ sub find_start()
 }
 
 # start at the root node (aka the very first target)
-# what we want to do is find a Macro, and change the Macro to its value
+# what we want to do is find a Macro within each target's commands,
+# and change the Macro to its value
 sub replace_macros_in_commands
 {
    # print("******\$target is $target******\n");
@@ -215,7 +218,8 @@ sub replace_macros_in_commands
    foreach my $key (keys %GRAPH)
    {
       my $target = $key;
-      # while the command has a macro, change the macro to its value one by one
+      # while the command has a macro, change the macro 
+      # to its value one by one
       # while( $GRAPH{$target}{COMMANDS}{CMD} =~ m/\$\{(.+)\}/)
       # {
       #    print("\$target: $target\n");
@@ -241,49 +245,57 @@ sub replace_macros_in_commands
 sub make_fn
 {
 	# my $count = 0;
-	# $_[0] gives us the argument passed in at the 0'th index, i.e the first argument
+	# $_[0] gives us the argument passed in at the 0'th index, i.e 
+   # the first argument
 	my $target = $_[0]; 
-	# first check if the target exists, if it doesnt, print an error command such as:
+	# first check if the target exists, if it doesnt, print an error 
+   # command such as:
 	# pmake: *** No rule to make target $target. Stop.***
 	# print("Start of make_fn, target is $target\n");
 
 	# first need to check if $target matches something in the form "${*}"
-   # so do a search and replace, where we check if target is of the form ${}, and if it is, replace it with
+   # so do a search and replace, where we check if target is of the 
+   # form ${}, and if it is, replace it with
    # $MACROS{$target}
 
 
-   if($target =~ m/^\$\{(.+)\}/)
-   {
-      print("\$target: $target is a macro!\n");
-      print("$MACROS{$1}{VALUE}\n");
-      my $old_target = $target;
-      $target = $MACROS{$1}{VALUE};
-      $GRAPH{$target} = $GRAPH{$old_target};
-      delete $GRAPH{$old_target};
-      print("old target = $old_target\n");
-      print("replaced = $GRAPH{$target}\n");
-   }
+   # if($target =~ m/^\$\{(.+)\}/)
+   # {
+   #    print("\$target: $target is a macro!\n");
+   #    print("$MACROS{$1}{VALUE}\n");
+   #    my $old_target = $target;
+   #    $target = $MACROS{$1}{VALUE};
+   #    $GRAPH{$target} = $GRAPH{$old_target};
+   #    delete $GRAPH{$old_target};
+   #    print("old target = $old_target\n");
+   #    print("replaced = $GRAPH{$target}\n");
+   # }
 
 	if(exists($GRAPH{$target}))
 	{
 
-      # print("In the if condition of make_fn, \$GRAPH{$target} is ($GRAPH{$target})\n");
-
 		# calling check_prereqs will check if there are any prereqs,
-		# if there are any, then we want to recursively call make_fn on the targets
+		# if there are any, then we want to recursively call make_fn 
+      # on the targets
 		check_prereqs($target);
       # print("     done checking prereqs: $target\n");
       my $target_modtime = modtime($target);
       # print("modtime of $target is $target_modtime\n");
       # if target_modtime is defined, that means its up to date
 
-      if(! defined($target_modtime) and defined($GRAPH{$target}{COMMANDS}[0]{CMD}))
+      if(! defined($target_modtime) and 
+         defined($GRAPH{$target}{COMMANDS}[0]{CMD})
+         )
       {
          my $result = run_command($GRAPH{$target}{COMMANDS}[0]{CMD});
-         if(defined($result) and substr($GRAPH{$target}{COMMANDS}[0]{CMD}, 0, 1) eq '-')
+         if(defined($result) and 
+            substr($GRAPH{$target}{COMMANDS}[0]{CMD}, 0, 1) eq '-'
+            )
          {
-            # print("run_command returned a result, aka we have an error, \$result is $result\n");
-            print("pmake: [Makefile:$GRAPH{$target}{COMMANDS}[0]{LINE}: $target] Error 1 (ignored)\n");
+            # print("run_command returned a result, aka we have an error,
+            # \$result is $result\n");
+            print("pmake: [Makefile:$GRAPH{$target}{COMMANDS}[0]{LINE}: 
+                  $target] Error 1 (ignored)\n");
          }
       }
       elsif(! defined($GRAPH{$target}{COMMANDS}[0]{CMD}))
@@ -323,16 +335,19 @@ sub check_prereqs
          # print("$_ is a .o file\n");
          make_fn($_);
       }
-		elsif($_ =~ m/\s*\S+\.\S+\s*/) #checks to see if the prereq is a file that is not a .o file
+		elsif($_ =~ m/\s*\S+\.\S+\s*/) 
+      #checks to see if the prereq is a file that is not a .o file
 		{
 			# if the current prereq is a file, just ignore it
 			# however, we do want to compare its timestamp 
-			# we need to check if the file exists, if it exists, system will return 0,
+			# we need to check if the file exists
+         # if it exists, system will return 0,
 			# otherwise it'll return 1
 			# if it returns 1, throw an error saying the target does not exist
 			# my $status = eval {no warnings; system("find $_; echo $?") };
 
-			# find the modtime of the prereq, if the prereq exists, status should be defined
+			# find the modtime of the prereq
+         # if the prereq exists, status should be defined
 			my $status = modtime($_);
 			# print("\$status is $status\n");
 
@@ -341,7 +356,7 @@ sub check_prereqs
 			{
 				print("cannot find target: $_\n");
 			}
-			# otherwise, the file prereq does exist so just continue with the loop
+			# otherwise, the file prereq does exist so just continue w/ the loop
 			else 
 			{
 				next;
@@ -352,38 +367,55 @@ sub check_prereqs
 		else
 		{
          # if the prerequisite is not a file, then it is a macro
+         # this $_ is a prereq
          if($_ =~ m/^\$\{(.+)\}/)
          {
             # print("        \$prereq: $_ is a macro!\n");
             # print("        $_ 's value is: $MACROS{$1}{VALUE}\n");
             my $old_target = $_;
+            # print("     \$old_target is $old_target\n");
             # $_ = $MACROS{$1}{VALUE};
             # print("\$_ = $_\n");
             # print("old target = $old_target\n");
+
+            # grab the macro's corresponding value in the macro hash
+            # store that into $_
             $_ = $MACROS{$1}{VALUE};
             $GRAPH{$_} = $GRAPH{$old_target};
-            # print("\$_ = $_\n");
-            # $GRAPH{$_}{COMMANDS} = $GRAPH{$old_target}{COMMANDS};
-            # $GRAPH{$_}{LINE} = $GRAPH{$old_target}{LINE};
-            # my $string_of_prereqs = $GRAPH{$old_target}{PREREQS};
-            # my @list_of_prereqs = split / /, $string_of_prereqs;
-            # print("list of prereqs for the macro $old_target: \n");
-            # $GRAPH{$_}{PREREQS} = $GRAPH{$old_target}{PREREQS};
-            # print("GRAPH at {\$_} = $GRAPH{$_}\n");
+
+            # old_target is the target before changing its value to its' macro value
+            # i.e it is $(EXECBIN)
+            # $GRAPH{$old_target}{PREREQS}[0] gives us $(EXECBIN)'s prereqs
+            # print("$old_target 's prereqs are $GRAPH{$old_target}{PREREQS}[0]\n");
+            my @final_list_of_prereqs;
             delete $GRAPH{$old_target};
-            foreach (@{$GRAPH{$_}{PREREQS}})
+            foreach my $prereq_non_split (@{$GRAPH{$_}{PREREQS}})
             {
-               if($_ =~ m/^\$\{(.+)\}/)
+               # print("*****first foreach, iterating on \$prereq_non_split: $prereq_non_split \n");
+               if($prereq_non_split =~ m/^\$\{(.+)\}/)
                {
-                  $_ = $MACROS{$1}{VALUE};
+                  $prereq_non_split = $MACROS{$1}{VALUE};
                }
                # print("trying to split $_\n");
-               my @items = split / /, $_;
-               foreach (@items)
+               my @prereqs = split / /, $prereq_non_split;
+               # $GRAPH{}
+
+               # prereq
+               foreach my $prereq (@prereqs)
                {
-                  make_fn($_);
+                  # as we are looping through here, we want to append $_ to that prereq
+                  # $GRAPH{}
+                  # print("     in the bottom-most foreach, \$prereq is $prereq \n");
+                  push @final_list_of_prereqs, $prereq;
                }
             }
+
+            # $GRAPH{$_}{PREREQS} = @final_list_of_prereqs;
+            foreach my $p (@final_list_of_prereqs)
+            {
+               push $GRAPH{$_}{PREREQS}, $p;
+            }
+            shift($GRAPH{$_}{PREREQS});
          }
          else
          {
